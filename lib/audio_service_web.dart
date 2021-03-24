@@ -267,8 +267,8 @@ class BackgroundHandler {
         case MediaAction.seek:
           try {
             setActionHandler('seekto', js.allowInterop((ActionResult ev) {
-              //print(ev.action);
-              //print(ev.seekTime);
+              //log.info(ev.action);
+              //log.info(ev.seekTime);
               // Chrome uses seconds for whatever reason
               AudioService.seekTo(Duration(
                 milliseconds: (ev.seekTime * 1000).round(),
@@ -288,7 +288,7 @@ class BackgroundHandler {
     try {
       // Dart also doesn't expose setPositionState
       if (mediaItem != null) {
-        //print(
+        //log.info(
         //    'Setting positionState Duration(${mediaItem!.duration?.inSeconds}), PlaybackRate(${args[6] ?? 1.0}), Position(${Duration(milliseconds: args[4])?.inSeconds})');
 
         // Chrome looks for seconds for some reason
@@ -299,7 +299,7 @@ class BackgroundHandler {
         ));
       }
     } catch (e) {
-      print(e);
+      log.info(e);
     }
 
     plugin.clientHandler.invokeMethod('onPlaybackStateChanged', [
@@ -334,7 +334,7 @@ class BackgroundHandler {
         ],
       });
     } catch (e) {
-      print('Metadata failed $e');
+      log.info('Metadata failed $e');
     }
 
     plugin.clientHandler.invokeMethod('onMediaChanged', [mediaItem!.toJson()]);

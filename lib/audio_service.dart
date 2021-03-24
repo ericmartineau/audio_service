@@ -8,7 +8,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
+
+final log = Logger("audioService");
 
 /// The different buttons on a headset.
 enum MediaButton {
@@ -694,12 +697,13 @@ class AudioService {
     BaseCacheManager? cacheManager,
   }) async {
     assert(_cacheManager == null);
+
     config ??= AudioServiceConfig();
-    print("### AudioService.init");
+    log.info("### AudioService.init");
     WidgetsFlutterBinding.ensureInitialized();
     _cacheManager = cacheManager ?? DefaultCacheManager();
     final methodHandler = (MethodCall call) async {
-      print("### UI received ${call.method}");
+      log.info("### UI received ${call.method}");
       switch (call.method) {
         case 'notificationClicked':
           _notificationClickEvent.add(call.arguments[0]);
@@ -717,6 +721,15 @@ class AudioService {
       builder: builder,
       config: config,
     );
+    final rp = ReceivePort.fromRawReceivePort(RawReceivePort(() {
+      log.info("Got shutdown hook!  Sending to handler");
+      _channel
+          .invokeMethod('stop')
+          .then((value) => log.info("SHUTDOWN COMPLETE"));
+    }, "shutdownHook"));
+
+    Isolate.current.addOnExitListener(rp.sendPort);
+
     return impl;
   }
 
@@ -725,14 +738,14 @@ class AudioService {
     AudioServiceConfig? config,
   }) async {
     config ??= AudioServiceConfig();
-    print("### AudioServiceBackground._register");
+    log.info("### AudioServiceBackground._register");
     _config = config;
     final handler = builder();
     _handler = handler;
 
     final Future<dynamic> Function(MethodCall call) methodHandler =
         (MethodCall call) async {
-      print('### background received ${call.method}');
+      log.info('### background received ${call.method}');
       try {
         switch (call.method) {
           case 'onLoadChildren':
@@ -841,7 +854,7 @@ class AudioService {
             throw PlatformException(code: 'Unimplemented');
         }
       } catch (e, stacktrace) {
-        print('$stacktrace');
+        log.info('$stacktrace');
         throw PlatformException(code: '$e');
       }
     };
@@ -1198,7 +1211,7 @@ class AudioService {
     try {
       await audioSession.setActive(false);
     } catch (e) {
-      print("While deactivating audio session: $e");
+      log.info("While deactivating audio session: $e");
     }
     await _backgroundChannel.invokeMethod('stopService');
   }
@@ -2202,7 +2215,7 @@ class _IsolateAudioHandler extends AudioHandler {
 
   _IsolateAudioHandler() : super._() {
     final methodHandler = (MethodCall call) async {
-      print("### client received ${call.method}");
+      log.info("### client received ${call.method}");
       final List? args = call.arguments;
       switch (call.method) {
         case 'onPlaybackStateChanged':
@@ -2407,7 +2420,7 @@ class _IsolateAudioHandler extends AudioHandler {
     final receivePort = ReceivePort();
     sendPort.send(_IsolateRequest(receivePort.sendPort, method, arguments));
     final result = await receivePort.first;
-    print("isolate result received: $result");
+    log.info("isolate result received: $result");
     receivePort.close();
     return result;
   }
@@ -3217,7 +3230,7 @@ class AudioServiceBackground {
   static Future<void> setQueue(List<MediaItem> queue,
       {bool preloadArtwork = false}) async {
     if (preloadArtwork) {
-      print(
+      log.info(
           'WARNING: preloadArtwork is not enabled. Must be set via AudioService.init()');
     }
     _handler.queue.add(queue);

@@ -15,6 +15,7 @@ dependencies:
   # flutter_cache_manager compile.
   sqflite: ^2.0.0+2
   js: ^0.6.3
+  logging: ^1.0.0
   flutter:
     sdk: flutter
   flutter_web_plugins:
